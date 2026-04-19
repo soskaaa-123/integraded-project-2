@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrated Project - EAIS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Courier New', monospace; overflow: hidden; background: #000; }
+        
+        /* Laptop Container */
+        .laptop-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            perspective: 1000px;
+        }
+
+        .laptop {
+            width: 900px;
+            height: 600px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.5s ease-in-out;
+        }
+
+        .laptop.open {
+            transform: rotateX(20deg) translateY(-50px);
+        }
+
+        .laptop-base {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(to bottom, #4a4a4a 0%, #2a2a2a 100%);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .laptop-screen-container {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 450px;
+            background: #1a1a1a;
+            border-radius: 10px 10px 0 0;
+            transform-origin: bottom;
+            transition: transform 1.5s ease-in-out;
+            transform: rotateX(-90deg);
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        .laptop.open .laptop-screen-container {
+            transform: rotateX(0deg);
+        }
+
+        .laptop-screen {
+            width: calc(100% - 40px);
+            height: calc(100% - 40px);
+            margin: 20px;
+            background: #000;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .start-prompt {
+            position: absolute;
+            bottom: 220px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #0f0;
+            font-size: 24px;
+            text-align: center;
+            animation: pulse 1s infinite;
+            cursor: pointer;
+            z-index: 1000;
+            text-shadow: 0 0 20px #0f0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+            50% { opacity: 0.7; transform: translateX(-50%) scale(0.95); }
+        }
+
+        /* BIOS Screen */
+        .bios-screen {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: #c0c0c0;
+            padding: 20px;
+            display: none;
+        }
+
+        .bios-screen.active { display: block; }
+
+        .bios-line {
+            margin: 5px 0;
+            opacity: 0;
+            animation: fadeIn 0.1s forwards;
+        }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        .bios-green { color: #0f0; }
+        .bios-white { color: #fff; }
+        .bios-yellow { color: #ff0; }
+
+        .eais-logo {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #0f0;
+        }
+
+        /* Desktop */
+        .desktop {
+            display: none;
+            width: 100%;
+            height: 100%;
+            background: #008080;
+            position: relative;
+        }
+
+        .desktop.active { display: block; }
+
+        .desktop-icons {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex-wrap: wrap;
+            height: calc(100% - 40px);
+        }
+
+        .desktop-icon {
+            width: 80px;
+            text-align: center;
+            cursor: pointer;
+            padding: 5px;
+            border: 2px solid transparent;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .desktop-icon:hover {
+            border: 2px dotted #fff;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .desktop-icon span {
+            color: white;
+            font-size: 11px;
+            text-shadow: 1px 1px 2px black;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .icon-img {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        /* Taskbar */
+        .taskbar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(to bottom, #4a9eff 0%, #0066cc 100%);
+            border-top: 2px solid #66b3ff;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+        }
+
+        .start-btn {
+            background: linear-gradient(to bottom, #3c8f3c 0%, #2d6b2d 100%);
+            border: 2px outset #5cb85c;
+            color: white;
+            padding: 5px 15px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .taskbar-time {
+            margin-left: auto;
+            background: #0055aa;
+            border: 2px inset #66b3ff;
+            padding: 4px 10px;
+            color: white;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        /* Main App Window */
+        .main-app {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: calc(100vh - 40px);
+            background: #f0f0f0;
+            z-index: 9998;
+            overflow: auto;
+        }
+
+        .main-app.active { display: block; }
+
+        .app-title-bar {
+            background: linear-gradient(to right, #000080, #1084d0);
+            color: white;
+            padding: 5px 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-controls button {
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            width: 25px;
+            height: 25px;
+            margin-left: 2px;
+            cursor: pointer;
+        }
+
+        .app-content {
+            padding: 20px;
+            background: #fff;
+            min-height: calc(100vh - 100px);
+        }
+
+        /* Navigation */
+        .nav-menu {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .nav-items {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .nav-item {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .dropdown { position: relative; }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            min-width: 200px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            margin-top: 5px;
+            z-index: 1000;
+        }
+
+        .dropdown-content.show { display: block; }
+
+        .dropdown-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dropdown-item:hover { background: #f5f5f5; }
+
+        .dropdown-submenu { position: relative; }
+
+        .dropdown-submenu-content {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: 0;
+            background: white;
+            min-width: 150px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .dropdown-submenu-content.show { display: block; }
+
+        /* Sections */
+        .section { display: none; animation: fadeIn 0.3s; }
+        .section.active { display: block; }
+
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .page-title { font-size: 2.5em; margin-bottom: 10px; }
+
+        .group-members {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 15px;
+        }
+
+        .member-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .member-tag {
+            background: rgba(255,255,255,0.9);
+            color: #667eea;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+        }
+
+        /* Subject Grid */
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .subject-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .subject-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+        }
+
+        .subject-card-image {
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 70px;
+            color: white;
+        }
+
+        .subject-card-content { padding: 20px; }
+        .subject-card h3 { color: #667eea; margin-bottom: 10px; }
+        .subject-card p { color: #666; line-height: 1.6; }
+
+        /* Content Layout */
+        .content-layout {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .content-main {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .content-sidebar {
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+
+        .content-sidebar-image {
+            height: 250px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 100px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .content-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .content-card h3 { color: #667eea; margin-bottom: 15px; }
+        .content-card p, .content-card li { line-height: 1.8; color: #333; }
+        .content-card ul { margin-left: 20px; }
+
+        .back-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .back-button:hover { transform: translateX(-5px); }
+
+        /* AI App */
+        .ai-app {
+            display: none;
+            position: fixed;
+            width: 400px;
+            height: 550px;
+            background: #c0c0c0;
+            border: 3px outset #fff;
+            box-shadow: 5px 5px 20px rgba(0,0,0,0.5);
+            z-index: 10001;
+        }
+
+        .ai-app.active { display: block; }
+
+        .ai-title-bar {
+            background: linear-gradient(to right, #000080, #1084d0);
+            color: white;
+            padding: 5px 8px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+
+        .ai-controls button {
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            width: 20px;
+            height: 20px;
+            margin-left: 2px;
+            cursor: pointer;
+        }
+
+        .ai-content {
+            padding: 10px;
+            height: calc(100% - 30px);
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+
+        .ai-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            border: 2px inset #c0c0c0;
+            margin-bottom: 10px;
+        }
+
+        .ai-message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 85%;
+        }
+
+        .ai-message.bot {
+            background: #e3f2fd;
+            border-left: 3px solid #2196f3;
+        }
+
+        .ai-message.user {
+            background: #f0f0f0;
+            border-right: 3px solid #667eea;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .ai-input-container { display: flex; gap: 5px; }
+
+        .ai-input {
+            flex: 1;
+            padding: 8px;
+            border: 2px inset #c0c0c0;
+        }
+
+        .ai-send {
+            background: #c0c0c0;
+            border: 2px outset #fff;
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+
+        .ai-typing {
+            color: #666;
+            font-style: italic;
+            font-size: 12px;
+            margin: 5px 0;
+            display: none;
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .data-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table tr:hover { background: #f5f5f5; }
+
+        @media (max-width: 968px) {
+            .content-layout { grid-template-columns: 1fr; }
+            .content-sidebar { position: relative; }
+            .laptop { width: 95vw; height: 60vh; }
+            .ai-app { width: 90%; left: 5% !important; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Laptop Container -->
+    <div class="laptop-container" id="laptopContainer">
+        <div class="laptop" id="laptop">
+            <div class="laptop-screen-container">
+                <div class="laptop-screen">
+                    <!-- BIOS Screen -->
+                    <div class="bios-screen" id="biosScreen">
+                        <div style="color: #fff; font-size: 16px; margin-bottom: 10px;">AWARD MODULAR BIOS v4.51PG</div>
+                        <div style="color: #fff;">Copyright (C) 1984-95, Award Software, Inc.</div>
+                        <div style="color: #fff; margin-top: 15px;">PENTIUM-S CPU at 133MHz</div>
+                        
+                        <div class="eais-logo" style="animation-delay: 0.3s">
+                            <div style="color: #0f0; font-size: 28px; font-weight: bold; margin-bottom: 10px;">EAIS</div>
+                            <div style="color: #fff; font-size: 14px;">Egyptian American</div>
+                            <div style="color: #fff; font-size: 14px;">International School</div>
+                            <div style="color: #0f0; margin-top: 10px; font-size: 20px;">🎓</div>
+                        </div>
+                        
+                        <div class="bios-line bios-green" style="animation-delay: 0.5s">Memory Test: 65536K OK</div>
+                        <div class="bios-line bios-yellow" style="animation-delay: 0.7s">Loading EAIS System...</div>
+                        <div class="bios-line bios-white" style="animation-delay: 0.9s; margin-top: 20px">System Ready.</div>
+                    </div>
+
+                    <!-- Desktop -->
+                    <div class="desktop" id="desktop">
+                        <div class="desktop-icons">
+                            <div class="desktop-icon" onclick="openApp('docs')">
+                                <div class="icon-img" style="background: #ffeb3b;">📁</div>
+                                <span>My Documents</span>
+                            </div>
+                            <div class="desktop-icon" onclick="openApp('recycle')">
+                                <div class="icon-img" style="background: #9e9e9e;">🗑️</div>
+                                <span>Recycle Bin</span>
+                            </div>
+                            <div class="desktop-icon" onclick="openApp('internet')">
+                                <div class="icon-img" style="background: #2196f3; border-radius: 50%;">🌐</div>
+                                <span>Internet</span>
+                            </div>
+                            <div class="desktop-icon" onclick="openMainApp()">
+                                <div class="icon-img" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">📚</div>
+                                <span>Integrated Project</span>
+                            </div>
+                            <div class="desktop-icon" onclick="openApp('calc')">
+                                <div class="icon-img" style="background: #4caf50;">🧮</div>
+                                <span>Calculator</span>
+                            </div>
+                            <div class="desktop-icon" onclick="openAIApp()">
+                                <div class="icon-img" style="background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%); border-radius: 50%;">🤖</div>
+                                <span>EAIS AI</span>
+                            </div>
+                        </div>
+                        <div class="taskbar">
+                            <button class="start-btn">🪟 Start</button>
+                            <div class="taskbar-time" id="taskbarTime">12:00 PM</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="laptop-base"></div>
+        </div>
+        
+        <div class="start-prompt" onclick="startLaptop()">
+            CLICK TO START<br>
+            <span style="font-size: 16px;">[ Open Laptop ]</span>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="main-app" id="mainApp">
+        <div class="app-title-bar">
+            <span>EAIS - Integrated Project 2026</span>
+            <div class="app-controls">
+                <button onclick="minimizeApp()">_</button>
+                <button onclick="maximizeApp()">□</button>
+                <button onclick="closeMainApp()">X</button>
+            </div>
+        </div>
+        <div class="app-content" id="appContent">
+            <!-- Navigation -->
+            <div class="nav-menu">
+                <div class="nav-items">
+                    <div class="nav-item" onclick="showSection('home')">Menu</div>
+                    <div class="nav-item dropdown" onclick="toggleDropdown(event)">
+                        Subjects ▾
+                        <div class="dropdown-content">
+                            <div class="dropdown-item" onclick="showSubject('english')">English</div>
+                            <div class="dropdown-item" onclick="showSubject('math')">Math</div>
+                            <div class="dropdown-item" onclick="showSubject('arabic')">Arabic</div>
+                            <div class="dropdown-item" onclick="showSubject('social')">Social</div>
+                            <div class="dropdown-submenu" onclick="event.stopPropagation()">
+                                <div class="dropdown-item">2nd Language ▶</div>
+                                <div class="dropdown-submenu-content">
+                                    <div class="dropdown-item" onclick="showSubject('german')">Deutsch</div>
+                                    <div class="dropdown-item" onclick="showSubject('french')">Français</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="nav-item" onclick="showSection('work')">Work</div>
+                    <div class="nav-item" onclick="showSection('table')">Table</div>
+                </div>
+            </div>
+
+            <!-- Home Section -->
+            <div class="section active" id="homeSection">
+                <div class="page-header">
+                    <h1 class="page-title">Integrated Project</h1>
+                    <div style="font-size: 1.3em;">Egyptian American International School - 2026</div>
+                    <div class="group-members">
+                        <div style="font-weight: bold; margin-bottom: 10px;">Group Members</div>
+                        <div class="member-list">
+                            <span class="member-tag">Selim</span>
+                            <span class="member-tag">Hamza K</span>
+                            <span class="member-tag">Malak</span>
+                            <span class="member-tag">Rokaya</span>
+                            <span class="member-tag">Youssef</span>
+                            <span class="member-tag">Mahmoud</span>
+                            <span class="member-tag">Renad</span>
+                            <span class="member-tag">Farida</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subjects-grid">
+                    <div class="subject-card" onclick="showSubject('english')">
+                        <div class="subject-card-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">📖</div>
+                        <div class="subject-card-content">
+                            <h3>English</h3>
+                            <p>Language & Literature - Creative writing and analysis</p>
+                        </div>
+                    </div>
+                    <div class="subject-card" onclick="showSubject('math')">
+                        <div class="subject-card-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">🔢</div>
+                        <div class="subject-card-content">
+                            <h3>Math</h3>
+                            <p>Numbers & Equations - Algebra and geometry</p>
+                        </div>
+                    </div>
+                    <div class="subject-card" onclick="showSubject('arabic')">
+                        <div class="subject-card-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">📜</div>
+                        <div class="subject-card-content">
+                            <h3>Arabic</h3>
+                            <p>اللغة العربية - Language and literature</p>
+                        </div>
+                    </div>
+                    <div class="subject-card" onclick="showSubject('social')">
+                        <div class="subject-card-image" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">🌍</div>
+                        <div class="subject-card-content">
+                            <h3>Social</h3>
+                            <p>History & Geography - Past and present</p>
+                        </div>
+                    </div>
+                    <div class="subject-card" onclick="showSubject('french')">
+                        <div class="subject-card-image" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">🇫</div>
+                        <div class="subject-card-content">
+                            <h3>French</h3>
+                            <p>Français - Language and culture</p>
+                        </div>
+                    </div>
+                    <div class="subject-card" onclick="showSubject('german')">
+                        <div class="subject-card-image" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">🇩🇪</div>
+                        <div class="subject-card-content">
+                            <h3>German</h3>
+                            <p>Deutsch - Language and daily routines</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject sections would go here (same content as before) -->
+            <!-- For brevity, I'll add the key sections -->
+            
+            <div class="section" id="englishSection">
+                <button class="back-button" onclick="showSection('home')">← Back to Menu</button>
+                <div class="page-header">
+                    <h1 class="page-title">📖 English</h1>
+                </div>
+                <div class="content-layout">
+                    <div class="content-main">
+                        <div class="content-card">
+                            <h3>Creative Writing - The Big Game</h3>
+                            <p>Last weekend was the most exciting day of my life. Our school football team, the Eagles, played against the Tigers in the championship final...</p>
+                            <p style="margin-top: 10px;">In the first half, the Tigers scored. But our captain Omar never gave up. Omar scored from the halfway line! Then Khalid scored the winning goal. Final score: 2-1!</p>
+                        </div>
+                        <div class="content-card">
+                            <h3>Literature Analysis</h3>
+                            <p>We analyzed classic literary works focusing on themes of perseverance and teamwork.</p>
+                        </div>
+                    </div>
+                    <div class="content-sidebar">
+                        <div class="content-sidebar-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">📚</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="mathSection">
+                <button class="back-button" onclick="showSection('home')">← Back to Menu</button>
+                <div class="page-header">
+                    <h1 class="page-title">🔢 Mathematics</h1>
+                </div>
+                <div class="content-layout">
+                    <div class="content-main">
+                        <div class="content-card">
+                            <h3>Key Topics</h3>
+                            <ul>
+                                <li>Algebraic Expressions and Equations</li>
+                                <li>Geometry: Shapes, Angles, and Proofs</li>
+                                <li>Statistics and Data Analysis</li>
+                                <li>Trigonometry and Functions</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="content-sidebar">
+                        <div class="content-sidebar-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">📐</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="arabicSection">
+                <button class="back-button" onclick="showSection('home')">← Back to Menu</button>
+                <div class="page-header">
+                    <h1 class="page-title">📜 Arabic</h1>
+                </div>
+                <div class="content-layout">
+                    <div class="content-main">
+                        <div class="content-card">
+                            <h3>كيف تحمي نفسك من فيروس كورونا</h3>
+                            <ul>
+                                <li>اغسل يديك بالماء والصابون لمدة 20 ثانية</li>
+                                <li>استخدم المعقم الكحولي</li>
+                                <li>تجنب لمس وجهك</li>
+                                <li>حافظ على مسافة آمنة (1-2 متر)</li>
+                                <li>ارتدِ الكمامة في الأماكن المزدحمة</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="content-sidebar">
+                        <div class="content-sidebar-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">☪️</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="socialSection">
+                <button class="back-button" onclick="showSection('home')">← Back to Menu</button>
+                <div class="page-header">
+                    <h1 class="page-title">🌍 Social Studies</h1>
+                </div>
+                <div class="content-main">
+                    <div class="content-card">
+                        <h3>Flu vs COVID-19</h3>
+                        <p><strong>Differences:</strong> COVID-19 spreads more easily, has longer incubation (2-14 days vs 1-4 days), and causes more severe complications.</p>
+                    </div>
+                    <div class="content-card">
+                        <h3>Prevention Tips</h3>
+                        <ul>
+                            <li>Wash hands frequently</li>
+                            <li>Wear masks in crowded spaces</li>
+                            <li>Maintain social distancing</li>
+                            <li>Get vaccinated</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="frenchSection">
+                <button class="back-button" onclick="showSection('home')">← Back to Menu</button>
+                <div class="page-header">
+                    <h1 class="page-title">🇫🇷 French</h1>
+                </div>
+                <div class="content-main">
+                    <div class="content-card">
+                        <h3>La Routine Quotidienne</h3>
+                        <p><strong>Marie:</strong> Je me réveille à sept heures, je prends mon petit déjeuner, puis je vais à l'école. L'après-midi, je fais mes devoirs. Le soir, je dîne avec ma famille et je me couche à vingt-et-une heures.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="germanSection">
+                <button class="back-button" onclick="showSection('home')">← Back to Menu</button>
+                <div class="page-header">
+                    <h1 class="page-title">🇩 German</h1>
+                </div>
+                <div class="content-main">
+                    <div class="content-card">
+                        <h3>Gesunder Tagesablauf</h3>
+                        <ul style="list-style: none;">
+                            <li style="margin: 10px 0;"><strong>07:00</strong> — Aufstehen & Frühstück</li>
+                            <li style="margin: 10px 0;"><strong>08:00-12:00</strong> — Schule / Lernen</li>
+                            <li style="margin: 10px 0;"><strong>12:00-13:00</strong> — Mittagessen</li>
+                            <li style="margin: 10px 0;"><strong>13:00-15:00</strong> — Sport</li>
+                            <li style="margin: 10px 0;"><strong>21:30</strong> — Schlafenszeit</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="workSection">
+                <button class="back-button" onclick="showSection('home')">← Back to Menu</button>
+                <div class="page-header">
+                    <h1 class="page-title">📸 Work Gallery</h1>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center;">
+                        <div style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 80px;">📊</div>
+                        <h3 style="margin-top: 15px;">Project Presentation</h3>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center;">
+                        <div style="height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 80px;">🤝</div>
+                        <h3 style="margin-top: 15px;">Group Collaboration</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="tableSection">
+                <button class="back-button" onclick="showSection('home')">← Back to Menu</button>
+                <div class="page-header">
+                    <h1 class="page-title">📊 Comparison Table</h1>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Feature</th><th>Flu</th><th>COVID-19</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Incubation</td><td>1-4 days</td><td>2-14 days</td></tr>
+                        <tr><td>Spread Rate</td><td>Moderate</td><td>High</td></tr>
+                        <tr><td>Complications</td><td>Standard</td><td>Severe</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI App -->
+    <div class="ai-app" id="aiApp" style="top: 100px; right: 100px;">
+        <div class="ai-title-bar" id="aiTitleBar">
+            <span>🤖 EAIS AI</span>
+            <div class="ai-controls">
+                <button onclick="minimizeAI()">_</button>
+                <button onclick="closeAI()">X</button>
+            </div>
+        </div>
+        <div class="ai-content">
+            <div class="ai-messages" id="aiMessages">
+                <div class="ai-message bot">Hello! Ask me about English, Math, Arabic, Social, French, German, or Health!</div>
+            </div>
+            <div class="ai-typing" id="aiTyping">AI thinking...</div>
+            <div class="ai-input-container">
+                <input type="text" class="ai-input" id="aiInput" placeholder="Ask me..." onkeypress="if(event.key==='Enter')sendAI()">
+                <button class="ai-send" onclick="sendAI()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Laptop Functions
+        function startLaptop() {
+            document.querySelector('.start-prompt').style.display = 'none';
+            document.getElementById('laptop').classList.add('open');
+            
+            setTimeout(() => {
+                document.getElementById('biosScreen').classList.add('active');
+            }, 800);
+            
+            setTimeout(() => {
+                document.getElementById('biosScreen').style.display = 'none';
+                document.getElementById('desktop').classList.add('active');
+                updateClock();
+                setInterval(updateClock, 1000);
+            }, 2000);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            document.getElementById('taskbarTime').textContent = `${hours}:${minutes} ${ampm}`;
+        }
+
+        // App Functions
+        function openMainApp() {
+            document.getElementById('mainApp').classList.add('active');
+        }
+
+        function closeMainApp() {
+            document.getElementById('mainApp').classList.remove('active');
+        }
+
+        function minimizeApp() {
+            document.getElementById('mainApp').classList.remove('active');
+        }
+
+        function maximizeApp() {
+            const app = document.getElementById('mainApp');
+            app.style.width = app.style.width === '100vw' ? '' : '100vw';
+            app.style.height = app.style.height === 'calc(100vh - 40px)' ? '' : 'calc(100vh - 40px)';
+        }
+
+        function openApp(name) {
+            alert(name + ' would open here');
+        }
+
+        // AI Functions
+        function openAIApp() {
+            document.getElementById('aiApp').classList.add('active');
+            makeDraggable(document.getElementById('aiApp'), document.getElementById('aiTitleBar'));
+        }
+
+        function closeAI() {
+            document.getElementById('aiApp').classList.remove('active');
+        }
+
+        function minimizeAI() {
+            document.getElementById('aiApp').classList.remove('active');
+        }
+
+        function makeDraggable(el, handle) {
+            let pos1=0, pos2=0, pos3=0, pos4=0;
+            handle.onmousedown = dragMouseDown;
+            function dragMouseDown(e) {
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                el.style.top = (el.offsetTop - pos2) + "px";
+                el.style.left = (el.offsetLeft - pos1) + "px";
+                el.style.right = 'auto';
+            }
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
+        function sendAI() {
+            const input = document.getElementById('aiInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            
+            addAIMessage(msg, 'user');
+            input.value = '';
+            document.getElementById('aiTyping').style.display = 'block';
+            
+            setTimeout(() => {
+                const response = generateAIResponse(msg);
+                document.getElementById('aiTyping').style.display = 'none';
+                addAIMessage(response, 'bot');
+            }, 800);
+        }
+
+        function addAIMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = 'ai-message ' + sender;
+            div.innerHTML = text;
+            document.getElementById('aiMessages').appendChild(div);
+            document.getElementById('aiMessages').scrollTop = document.getElementById('aiMessages').scrollHeight;
+        }
+
+        function generateAIResponse(msg) {
+            msg = msg.toLowerCase();
+            if (msg.includes('english')) return "<strong>English:</strong> We wrote 'The Big Game' story about football. The Eagles won 2-1!";
+            if (msg.includes('math')) return "<strong>Math:</strong> We studied algebra, geometry, statistics, and trigonometry.";
+            if (msg.includes('arabic') || msg.includes('كورونا')) return "<strong>Arabic:</strong> درسنا الوقاية من كورونا - اغسل يديك وارتدِ الكمامة!";
+            if (msg.includes('social') || msg.includes('covid')) return "<strong>Social:</strong> COVID-19 spreads faster than flu and has longer incubation (2-14 days).";
+            if (msg.includes('french')) return "<strong>French:</strong> Marie se réveille à 7h et se couche à 21h!";
+            if (msg.includes('german')) return "<strong>German:</strong> Gesunder Tagesablauf: 07:00 Aufstehen, 21:30 Schlafenszeit.";
+            if (msg.includes('group') || msg.includes('member')) return "<strong>Members:</strong> Selim, Hamza K, Malak, Rokaya, Youssef, Mahmoud, Renad, Farida";
+            return "<strong>I can help with:</strong> English, Math, Arabic, Social, French, German, Health. What do you want to know?";
+        }
+
+        // Navigation
+        function showSection(name) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(name + 'Section').classList.add('active');
+            document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+            document.getElementById('appContent').scrollTop = 0;
+        }
+
+        function showSubject(name) {
+            showSection(name);
+        }
+
+        function toggleDropdown(e) {
+            e.stopPropagation();
+            e.currentTarget.querySelector('.dropdown-content').classList.toggle('show');
+        }
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+        });
+    </script>
+</body>
+</html>
